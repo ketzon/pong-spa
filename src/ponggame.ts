@@ -30,6 +30,32 @@ type GameSounds = {
     femaleCount: Howl;
 }
 
+type BallColorProperties = {
+    [key: string]: {
+        speedX: number;
+        speedY: number;
+    }
+}
+
+const ballProperties: BallColorProperties = {
+    white: {
+        speedX: 9,
+        speedY: 5,
+    },
+    red: {
+        speedX: 9,
+        speedY: 5,
+    },
+    green: {
+        speedX: 5,
+        speedY: 9,
+    },
+    blue: {
+        speedX: 9,
+        speedY: 5,
+    }
+}
+
 // Utiliser les types définis
 
 function getElements() {
@@ -431,26 +457,20 @@ function changeBall(gameId: GameElements): void {
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
     }
-    if (temp === "red" && randomColor !== "red") {
-      const dirX:number = Math.sign(gameState.ballSpeedX) || 1;
-      const dirY:number = Math.sign(gameState.ballSpeedY) || 1;
-      if (randomColor === "blue") {
-        gameState.ballSpeedX =  9 + 1 * dirX;
-        gameState.ballSpeedY =  5 + 1 * dirY;
-      } else if (randomColor === "white") {
-        gameState.ballSpeedX =  9 * dirX;
-        gameState.ballSpeedY =  5 * dirY;
-        }
-    }
+    const dirX:number = Math.sign(gameState.ballSpeedX) || 1;
+    const dirY:number = Math.sign(gameState.ballSpeedY) || 1;
+
+    gameState.ballSpeedX = ballProperties[randomColor].speedX * dirX;
+    gameState.ballSpeedY = ballProperties[randomColor].speedY * dirY;
     gameId.ball.style.backgroundColor = randomColor;
     if (randomColor === "blue") {
-      gameSounds?.doublePoints.play();
+        gameSounds?.doublePoints.play();
     }
     else if (randomColor === "red") {
-      gameSounds?.smashBall.play();
+        gameSounds?.smashBall.play();
     }
     else if (randomColor === "white" && temp != "white") {
-      gameSounds?.whiteBall.play();
+        gameSounds?.whiteBall.play();
     }
     else if (randomColor === "green") {
         gameSounds?.whiteBall.play();
