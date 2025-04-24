@@ -14,7 +14,7 @@ type GameElements = {
     pauseGame: HTMLElement;
     resetGame: HTMLElement;
     winnerMsg: HTMLElement;
-    ballColor: HTMLElement;
+    muteGame: HTMLElement;
     basicButton: HTMLElement;
 }
 
@@ -44,7 +44,7 @@ function getElements() {
         pauseGame: document.getElementById("button-pause") as HTMLElement,
         resetGame: document.getElementById("button-reset")as HTMLElement,
         winnerMsg: document.getElementById("winner-message") as HTMLElement,
-        ballColor: document.getElementById("button-ball") as HTMLElement,
+        muteGame: document.getElementById("button-ball") as HTMLElement,
         basicButton: document.getElementById("button-basic") as HTMLElement,
     }
     return gameId;
@@ -109,15 +109,30 @@ function initSounds(): GameSounds {
     };
 }
 
+let mute:boolean = false;
+function changeAudioStatus(): void {
+    if (mute !== null) {
+        if (mute === true) {
+         gameId.muteGame.textContent = "mute";
+         mute = false;
+        }
+        else {
+         gameId.muteGame.textContent = "unmute";
+         mute = true;
+        }
+    }
+}
 function stopAllAudio(): void {
-    gameSounds?.smashBall.stop();
-    gameSounds?.whiteBall.stop();
-    gameSounds?.featuresMode.stop();
-    gameSounds?.defaultMode.stop();
-    gameSounds?.victorySound.stop();
-    gameSounds?.paddleSound.stop();
-    gameSounds?.smashSound.stop();
-    gameSounds?.doublePoints.stop();
+    if (mute === true) {
+        gameSounds?.smashBall.stop();
+        gameSounds?.whiteBall.stop();
+        gameSounds?.featuresMode.stop();
+        gameSounds?.defaultMode.stop();
+        gameSounds?.victorySound.stop();
+        gameSounds?.paddleSound.stop();
+        gameSounds?.smashSound.stop();
+        gameSounds?.doublePoints.stop();
+    }
 }
 
 
@@ -129,7 +144,7 @@ const paddleHeight:number = 80;
 const paddleWidth:number = 10;
 const paddleSpeed:number = 8;
 const margin:number = 10;
-const winScore:number = 5;
+const winScore:number = 5000;
 
 //game status variable
 let isBasic:boolean = true;
@@ -261,7 +276,7 @@ function resetBall(gameId: GameElements):void {
     }
     //envoie la balle en position random positif ou negatif (opti plus de combi)
     //pause de 1 sec pour pas trop enchainer
-   gameSounds?.femaleCount.play();
+   // gameSounds?.femaleCount.play(); pour avoir son au start de la balle
     setTimeout(() => {
         gameState.ballSpeedX = 9 * (Math.random() > 0.5 ? 1 : -1);
         gameState.ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
@@ -385,6 +400,10 @@ function changePause(gameId: GameElements): void{
 
 //reset le jeu
 function resetGame(gameId: GameElements): void {
+    if (colorChangeTimer !== undefined) {
+        clearTimeout(colorChangeTimer);
+        colorChangeTimer = undefined;
+    }
     gameState.scoreRight = 0
     gameState.scoreLeft = 0
     gameState.paddleRightY = 160;
@@ -393,8 +412,11 @@ function resetGame(gameId: GameElements): void {
     resetPaddles(gameId);
     resetScore(gameId);
     resetAllsounds();
-    setBasicMode(gameId);
-    changePause(gameId);
+    isBasic = true;
+    gameId.basicButton.textContent = "features-mode";
+    gameId.ball.style.backgroundColor = "white";
+    pause = true;
+    gameId.pauseGame.textContent = "start";
 }
 
 function changeBall(gameId: GameElements): void {
@@ -404,8 +426,7 @@ function changeBall(gameId: GameElements): void {
     if (!temp) {
         temp = "white";
     }
-    // const colors:string[] = ["red", "blue", "white", "green"];
-     const colors:string[] = ["white", "red"];
+    const colors:string[] = ["red", "blue", "white", "green"];
     let randomColor:string = colors[Math.floor(Math.random() * colors.length)];
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
@@ -438,7 +459,6 @@ function changeBall(gameId: GameElements): void {
 }
 
 function setBasicMode(gameId: GameElements):void {
-    stopAllAudio();
     console.log(`(in start function setBasicMode) Basic mode is: ${isBasic}`);
     if (isBasic !== null) {
         if (isBasic === false) {
@@ -469,8 +489,8 @@ function listenStatus(gameId: GameElements): void {
     if (gameId.resetGame) {
         gameId.resetGame.addEventListener("click", () => resetGame(gameId));
     }
-    if (gameId.ballColor) {
-        gameId.ballColor.addEventListener("click", () => changeBall(gameId));
+    if (gameId.muteGame) {
+        gameId.muteGame.addEventListener("click", () => changeAudioStatus());
     }
     if (gameId.basicButton) {
         gameId.basicButton.addEventListener("click", () => setBasicMode(gameId));
@@ -506,6 +526,10 @@ function checkWinner(gameId: GameElements): void {
 
 function autoChangeColor(gameId: GameElements): void {
     if (pause)  return;
+    if (colorChangeTimer !== undefined) {
+        clearTimeout(colorChangeTimer);
+        colorChangeTimer = undefined;
+    }
     const delay = Math.floor(Math.random() * 5000) + 5000; // 5s a 10s
     colorChangeTimer = window.setTimeout(() => {
     if (pause === false) {
@@ -516,18 +540,6 @@ function autoChangeColor(gameId: GameElements): void {
 }
 //-----------------------MAIN-GAME------------------------------//
 
-//main loop
-function gameLoop(gameId: GameElements): void {
-    if (pause === false) {
-        updatePaddles(gameId)
-        updateBall(gameId);
-    }
-    console.log(`(in function gameLoop) Basic mode is: ${isBasic}`);
-    stopAllAudio(); //jmute tout les sons pour dev sinon trop chiant
-    gameSounds?.femaleCount.stop();
-    checkWinner(gameId); 
-    animationFrameId = requestAnimationFrame(() => gameLoop(gameId)); 
-}
 
 //reset game si leave PongView
 export function stopPong(): void {
@@ -561,4 +573,17 @@ export function initPong(): void {
         gameSounds = initSounds();
     }
     animationFrameId = requestAnimationFrame(() => gameLoop(gameId));
+}
+
+//main loop
+function gameLoop(gameId: GameElements): void {
+    if (pause === false) {
+        updatePaddles(gameId)
+        updateBall(gameId);
+    }
+    if (mute) {
+        stopAllAudio();
+    }
+    checkWinner(gameId); 
+    animationFrameId = requestAnimationFrame(() => gameLoop(gameId)); 
 }
