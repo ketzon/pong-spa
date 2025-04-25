@@ -125,12 +125,10 @@ const ballProperties: BallColorProperties = {
         },
         onScore: (gameState, leftOrRight) => {
             if (leftOrRight === "left") {
-                gameState.scoreLeft++;
-                // gameState.scoreLeft++;
+                gameState.scoreLeft += 2;
             }
             else if (leftOrRight === "right"){
-                gameState.scoreRight++;
-                // gameState.scoreRight++;
+                gameState.scoreRight += 2;
             }
         },
         sound: (gameSounds) => {
@@ -368,8 +366,6 @@ function resetBall(gameId: GameElements):void {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
-    //envoie la balle en position random positif ou negatif (opti plus de combi)
-    //pause de 1 sec pour pas trop enchainer
    // gameSounds?.femaleCount.play(); pour avoir son au start de la balle
     setTimeout(() => {
         gameState.ballSpeedX = 9 * (Math.random() > 0.5 ? 1 : -1);
@@ -400,6 +396,7 @@ function applySoundEffect(colors:string):void {
 }
 
 
+let isScoring:boolean = false;
 function updateBall(gameId: GameElements): void {
     let ballColors:string = gameId.ball.style.backgroundColor;
     gameState.ballX += gameState.ballSpeedX;
@@ -430,19 +427,27 @@ function updateBall(gameId: GameElements): void {
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
     if (gameState.ballX < 0) {
-        if (isBasic) {
-            gameState.scoreRight++;
-        }
-        else {
-            applyColorEffect(gameId,"right", "score");
+        if (!isScoring) {
+            isScoring = true;
+            if (isBasic) {
+                gameState.scoreRight++;
+            }
+            else {
+                applyColorEffect(gameId,"right", "score");
+            }
+            setTimeout(()=> {isScoring = false;}, 500);
         }
         resetBall(gameId);
     }
     if (gameState.ballX + ballSize > gameWidth){
-        if (isBasic) {
-            gameState.scoreLeft++;
-        } else {
-            applyColorEffect(gameId, "left", "score");
+        if (!isScoring) {
+            isScoring = true;
+            if (isBasic) {
+                gameState.scoreLeft++;
+            } else {
+                applyColorEffect(gameId, "left", "score");
+            }
+            setTimeout(() => {isScoring = false;}, 500);
         }
         resetBall(gameId);
     }
@@ -496,7 +501,6 @@ function changeBall(gameId: GameElements): void {
     let randomColor:string = colors[Math.floor(Math.random() * colors.length)];
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
-        console.log("hello im stuck")
     }
     const dirX:number = Math.sign(gameState.ballSpeedX) || 1;
     const dirY:number = Math.sign(gameState.ballSpeedY) || 1;
@@ -511,7 +515,6 @@ function changeBall(gameId: GameElements): void {
 }
 
 function setBasicMode(gameId: GameElements):void {
-    console.log(`(in start function setBasicMode) Basic mode is: ${isBasic}`);
     if (isBasic !== null) {
         if (isBasic === false) {
             isBasic = true;
@@ -529,7 +532,6 @@ function setBasicMode(gameId: GameElements):void {
             gameId.basicButton.textContent = "default-mode";
         }
     }
-    console.log(`(in end function setBasicMode) Basic mode is: ${isBasic}`);
 }
 
 //ecoute bouton
@@ -576,6 +578,7 @@ function checkWinner(gameId: GameElements): void {
     }
 }
 
+//boucle principale du mode features, call changeBall pour les couleur
 function autoChangeColor(gameId: GameElements): void {
     if (pause)  return;
     if (colorChangeTimer !== undefined) {
