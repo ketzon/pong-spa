@@ -124,8 +124,14 @@ const ballProperties: BallColorProperties = {
 
         },
         onScore: (gameState, leftOrRight) => {
-            if (leftOrRight === "left") gameState.scoreLeft++;
-            else if (leftOrRight === "right") gameState.scoreRight++;
+            if (leftOrRight === "left") {
+                gameState.scoreLeft++;
+                // gameState.scoreLeft++;
+            }
+            else if (leftOrRight === "right"){
+                gameState.scoreRight++;
+                // gameState.scoreRight++;
+            }
         },
         sound: (gameSounds) => {
             gameSounds.doublePoints.play();
@@ -373,7 +379,7 @@ function resetBall(gameId: GameElements):void {
 }
 
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
-    if (isBasic === false) return "default" 
+    if (isBasic === true) return "default" 
     let colors:string = gameId.ball.style.backgroundColor || "white";
     if (status === "bounce" && ballProperties[colors].onBounce){
         ballProperties[colors].onBounce(gameState, leftOrRight, gameId);
@@ -424,11 +430,20 @@ function updateBall(gameId: GameElements): void {
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
     if (gameState.ballX < 0) {
-        applyColorEffect(gameId,"right", "score");
+        if (isBasic) {
+            gameState.scoreRight++;
+        }
+        else {
+            applyColorEffect(gameId,"right", "score");
+        }
         resetBall(gameId);
     }
     if (gameState.ballX + ballSize > gameWidth){
-        applyColorEffect(gameId,"left", "score");
+        if (isBasic) {
+            gameState.scoreLeft++;
+        } else {
+            applyColorEffect(gameId, "left", "score");
+        }
         resetBall(gameId);
     }
 }
@@ -470,16 +485,18 @@ function resetGame(gameId: GameElements): void {
     gameId.pauseGame.textContent = "start";
 }
 
+//function recursive call entre 5/10sec via autoChangeColor avec le mode features
 function changeBall(gameId: GameElements): void {
     if (!isBasic) { 
       let temp:string = gameId.ball.style.backgroundColor;
     if (!temp) {
         temp = "white";
     }
-    const colors:string[] = ["red", "blue", "white", "green"];
+    const colors:string[] = ["blue", "white"];
     let randomColor:string = colors[Math.floor(Math.random() * colors.length)];
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
+        console.log("hello im stuck")
     }
     const dirX:number = Math.sign(gameState.ballSpeedX) || 1;
     const dirY:number = Math.sign(gameState.ballSpeedY) || 1;
