@@ -30,31 +30,6 @@ type GameSounds = {
     femaleCount: Howl;
 }
 
-type BallColorProperties = {
-    [key: string]: {
-        speedX: number;
-        speedY: number;
-    }
-}
-
-const ballProperties: BallColorProperties = {
-    white: {
-        speedX: 9,
-        speedY: 5,
-    },
-    red: {
-        speedX: 9,
-        speedY: 5,
-    },
-    green: {
-        speedX: 5,
-        speedY: 9,
-    },
-    blue: {
-        speedX: 9,
-        speedY: 5,
-    }
-}
 
 // Utiliser les types définis
 
@@ -74,6 +49,67 @@ function getElements() {
         basicButton: document.getElementById("button-basic") as HTMLElement,
     }
     return gameId;
+}
+
+type BallColorProperties = {
+    [key: string]: {
+        speedX: number;
+        speedY: number;
+        onBounce?: (gameState: GameState, leftOrRight: string, gameId: GameElements) => void;
+        onScore?: (gameState: GameState, leftOrRight: string) => void;
+        sound?: (gameSounds: GameSounds) => void;
+    }
+}
+
+const ballProperties: BallColorProperties = {
+    white: {
+        speedX: 9,
+        speedY: 5,
+        onBounce: (_gameState, _leftOrRight, _gameId) => {},
+        onScore: (gameState, leftOrRight) => {
+            if (leftOrRight === "left") gameState.scoreLeft++;
+            else if (leftOrRight === "right") gameState.scoreRight++;
+        },
+        sound: (gameSounds) =>   { 
+            gameSounds?.whiteBall.play()}
+    },
+    red: {
+        speedX: 9,
+        speedY: 5,
+        onBounce: (gameState, leftOrRight, gameId) => {
+            const originalColor = "white";
+            const dirX = Math.sign(gameState.ballSpeedX || 1);
+            const boostedSpeed = 14 * dirX;
+            gameState.ballSpeedX = boostedSpeed;
+            if (leftOrRight === "left") {
+                gameId.paddleLeft.style.backgroundColor = "yellow";
+                setTimeout(() => {
+                    gameId.paddleLeft.style.backgroundColor = originalColor;
+                }, 100)
+            }
+            if (leftOrRight === "right") {
+                gameId.paddleRight.style.backgroundColor = "yellow";
+                setTimeout(() => {
+                    gameId.paddleRight.style.backgroundColor = originalColor;
+                }, 100)
+            }
+        }, 
+        onScore: (gameState, leftOrRight) => {
+            if (leftOrRight === "left") gameState.scoreLeft++;
+            else if (leftOrRight === "right") gameState.scoreRight++;
+        },
+        sound: (gameSounds) => {
+            gameSounds.smashBall.play()
+        }
+    },
+    green: {
+        speedX: 9,
+        speedY: 5,
+    },
+    blue: {
+        speedX: 9,
+        speedY: 5,
+    }
 }
 
 //sounds with howler.js
@@ -312,13 +348,8 @@ function resetBall(gameId: GameElements):void {
 
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
     if (isBasic === false) {
-    const originaldirX = gameState.ballSpeedX;
-    const originaldirY = gameState.ballSpeedY;
-    const originalColor = "white";
     let colors:string = gameId.ball.style.backgroundColor;
      if (colors === "blue" && status === "score") {
-         gameState.ballSpeedX = originaldirX;
-         gameState.ballSpeedY = originaldirY;
         if (leftOrRight === "left") {
              gameState.scoreLeft++;
         }
@@ -326,31 +357,9 @@ function applyColorEffect(gameId: GameElements, leftOrRight:string, status:strin
             gameState.scoreRight++;
         }
      }
-     if (colors === "red" && status === "bounce") {
-         gameState.ballSpeedX = originaldirX;
-         gameState.ballSpeedY = originaldirY;
-         const dirX = Math.sign(gameState.ballSpeedX || 1);
-         const boostedSpeed = 14 * dirX;
-         gameState.ballSpeedX = boostedSpeed;
-        if (leftOrRight === "left") {
-            gameId.paddleLeft.style.backgroundColor = "yellow";
-            setTimeout(() => {
-                gameId.paddleLeft.style.backgroundColor = originalColor;
-            }, 100)
-        }
-        if (leftOrRight === "right") {
-            gameId.paddleRight.style.backgroundColor = "yellow";
-            setTimeout(() => {
-                gameId.paddleRight.style.backgroundColor = originalColor;
-            }, 100)
-        }
-      }
       if (colors === "green" && status === "bounce") {
-          gameState.ballSpeedX = originaldirX;
-          gameState.ballSpeedY = originaldirY;
           const dirY = Math.sign(gameState.ballSpeedY || 1);
-          const boostedSpeedY = 14 * dirY;
-          gameState.ballSpeedY = boostedSpeedY;
+          gameState.ballSpeedY = 14 * dirY;
       }
       return colors;
     }
@@ -446,7 +455,6 @@ function resetGame(gameId: GameElements): void {
 }
 
 function changeBall(gameId: GameElements): void {
-    stopAllAudio();
     if (!isBasic) { 
       let temp:string = gameId.ball.style.backgroundColor;
     if (!temp) {
@@ -463,17 +471,8 @@ function changeBall(gameId: GameElements): void {
     gameState.ballSpeedX = ballProperties[randomColor].speedX * dirX;
     gameState.ballSpeedY = ballProperties[randomColor].speedY * dirY;
     gameId.ball.style.backgroundColor = randomColor;
-    if (randomColor === "blue") {
-        gameSounds?.doublePoints.play();
-    }
-    else if (randomColor === "red") {
-        gameSounds?.smashBall.play();
-    }
-    else if (randomColor === "white" && temp != "white") {
-        gameSounds?.whiteBall.play();
-    }
-    else if (randomColor === "green") {
-        gameSounds?.whiteBall.play();
+    if (!mute && ballProperties[randomColor]?.sound) {
+        ballProperties[randomColor].sound(gameSounds);
     }
   }
 }
