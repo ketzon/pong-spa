@@ -108,10 +108,7 @@ const ballProperties: BallColorProperties = {
         speedY: 5,
         onBounce: (gameState, _leftOrRight, _gameId) => {
             const dirY = Math.sign(gameState.ballSpeedY);
-            gameState.ballSpeedY = 12 * dirY; //maybe too high
-            setTimeout(() => {
-                gameState.ballSpeedY += (Math.random() - 0,5) * 4;
-            }, 100)
+            gameState.ballSpeedY = 12 * dirY; 
         },
         onScore: (gameState, leftOrRight) => {
             if (leftOrRight === "left") gameState.scoreLeft++;
@@ -619,16 +616,17 @@ function changeBall(gameId: GameElements): void {
     if (!temp) {
         temp = "white";
     }
-    const colors:string[] = ["blue", "white"];
+    const colors:string[] = ["green", "red", "blue", "white"];
     let randomColor:string = colors[Math.floor(Math.random() * colors.length)];
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
     }
-    const dirX:number = Math.sign(gameState.ballSpeedX) || 1;
-    const dirY:number = Math.sign(gameState.ballSpeedY) || 1;
+    // CHANGEMENT DE VITESSE SUR COULEUR
+    // const dirX:number = Math.sign(gameState.ballSpeedX);
+    // const dirY:number = Math.sign(gameState.ballSpeedY);
 
-    gameState.ballSpeedX = ballProperties[randomColor].speedX * dirX;
-    gameState.ballSpeedY = ballProperties[randomColor].speedY * dirY;
+    // gameState.ballSpeedX = ballProperties[randomColor].speedX * dirX;
+    // gameState.ballSpeedY = ballProperties[randomColor].speedY * dirY;
     gameId.ball.style.backgroundColor = randomColor;
     if (!mute && ballProperties[randomColor]?.sound) {
         ballProperties[randomColor].sound(gameSounds);
@@ -708,7 +706,11 @@ function autoChangeColor(gameId: GameElements): void {
         colorChangeTimer = undefined;
     }
     const delay = Math.floor(Math.random() * 5000) + 5000; // 5s a 10s
+    console.log(`changement de couleur dans ${delay/1000} secondes`) //pour debug
+    const startTime = Date.now(); //pour debug
     colorChangeTimer = window.setTimeout(() => {
+        const actualDelay = (Date.now() - startTime) / 1000; //pour debug
+        console.log(`changement de couleur effectuer apres ${actualDelay} secondes`) //pour debug
     if (pause === false) {
         changeBall(gameId);
         autoChangeColor(gameId);
