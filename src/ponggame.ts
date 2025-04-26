@@ -106,8 +106,12 @@ const ballProperties: BallColorProperties = {
     green: {
         speedX: 9,
         speedY: 5,
-        onBounce: (_gameState, _leftOrRight, _gameId) => {
-
+        onBounce: (gameState, _leftOrRight, _gameId) => {
+            const dirY = Math.sign(gameState.ballSpeedY);
+            gameState.ballSpeedY = 12 * dirY; //maybe too high
+            setTimeout(() => {
+                gameState.ballSpeedY += (Math.random() - 0,5) * 4;
+            }, 100)
         },
         onScore: (gameState, leftOrRight) => {
             if (leftOrRight === "left") gameState.scoreLeft++;
@@ -201,7 +205,6 @@ function initSounds(): GameSounds {
     };
 }
 
-let mute:boolean = false;
 function changeAudioStatus(): void {
     if (mute !== null) {
         if (mute === true) {
@@ -239,6 +242,8 @@ const margin:number = 10;
 const winScore:number = 5000;
 
 //game status variable
+let mute:boolean = false;
+let isScoring:boolean = false;
 let isBasic:boolean = true;
 let pause:boolean = true;
 let isResetting:boolean = false; //pour ne pas overlap sur une loop pendant un reset
@@ -366,12 +371,18 @@ function resetBall(gameId: GameElements):void {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
-   // gameSounds?.femaleCount.play(); pour avoir son au start de la balle
+    // gameSounds?.femaleCount.play(); //pour avoir son au start de la balle
     setTimeout(() => {
-        gameState.ballSpeedX = 9 * (Math.random() > 0.5 ? 1 : -1);
-        gameState.ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
+        const baseSpeed = 7 + Math.random() * 4;
+        const angle = (Math.random() * Math.PI / 2) - Math.PI / 4;
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        gameState.ballSpeedX = baseSpeed * direction * Math.cos(angle);
+        gameState.ballSpeedY = baseSpeed * Math.sin(angle);
         isResetting = false;
-    }, 1000)
+        if (!pause && !isBasic) {
+            autoChangeColor(gameId);
+        }
+    }, 1000);
 }
 
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
@@ -396,50 +407,161 @@ function applySoundEffect(colors:string):void {
 }
 
 
-let isScoring:boolean = false;
+//function updateBall(gameId: GameElements): void {
+//    let ballColors:string = gameId.ball.style.backgroundColor;
+//    gameState.ballX += gameState.ballSpeedX;
+//    gameState.ballY += gameState.ballSpeedY;
+//    if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize){
+//        gameState.ballSpeedY = -gameState.ballSpeedY;
+//    }
+//    //je bounce uniquement a hauteur de paddle && en bas du haut du paddle et au dessus du bas du paddle gauche
+//    if (gameState.ballX <= margin + paddleWidth &&
+//        gameState.ballY + ballSize >= gameState.paddleLeftY &&
+//        gameState.ballY <= gameState.paddleLeftY + paddleHeight) { //pour rebondir a gauche
+//        ballColors = applyColorEffect(gameId,"left", "bounce");
+//        gameState.ballSpeedX = -gameState.ballSpeedX;
+//        gameState.ballX = margin + paddleWidth + 1; //decale de 1pixel pour eviter paddle block
+//        applySoundEffect(ballColors);
+//    }
+//    //bounce a distante de margin + paddle et uniquement sur paddle droite
+//    if (gameState.ballX + ballSize >= gameWidth - margin - paddleWidth &&
+//        gameState.ballY + ballSize >= gameState.paddleRightY &&
+//        gameState.ballY <= gameState.paddleRightY + paddleHeight) {
+//        ballColors = applyColorEffect(gameId,"right", "bounce");
+//        gameState.ballSpeedX = -gameState.ballSpeedX;
+//        gameState.ballX = gameWidth - margin - paddleWidth - ballSize - 1; //decale de 1 pixel pour eviter bug paddle block
+//        applySoundEffect(ballColors);
+//    }
+//    if (gameId.ball){
+//        gameId.ball.style.left = `${gameState.ballX}px`;
+//        gameId.ball.style.top = `${gameState.ballY}px`;
+//    }
+//    if (gameState.ballX < 0) {
+//        if (!isScoring) {
+//            isScoring = true;
+//            if (isBasic) {
+//                gameState.scoreRight++;
+//            }
+//            else {
+//                applyColorEffect(gameId,"right", "score");
+//            }
+//            setTimeout(()=> {isScoring = false;}, 500);
+//        }
+//        resetBall(gameId);
+//    }
+//    if (gameState.ballX + ballSize > gameWidth){
+//        if (!isScoring) {
+//            isScoring = true;
+//            if (isBasic) {
+//                gameState.scoreLeft++;
+//            } else {
+//                applyColorEffect(gameId, "left", "score");
+//            }
+//            setTimeout(() => {isScoring = false;}, 500);
+//        }
+//        resetBall(gameId);
+//    }
+//}
+
 function updateBall(gameId: GameElements): void {
-    let ballColors:string = gameId.ball.style.backgroundColor;
+    let ballColors: string = gameId.ball.style.backgroundColor;
+    
+    // Déplacement normal de la balle
     gameState.ballX += gameState.ballSpeedX;
     gameState.ballY += gameState.ballSpeedY;
-    if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize){
+    
+    // Rebond sur les bords haut et bas
+    if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize) {
         gameState.ballSpeedY = -gameState.ballSpeedY;
     }
-    //je bounce uniquement a hauteur de paddle && en bas du haut du paddle et au dessus du bas du paddle gauche
+    
+    // Rebond sur la raquette gauche
     if (gameState.ballX <= margin + paddleWidth &&
         gameState.ballY + ballSize >= gameState.paddleLeftY &&
-        gameState.ballY <= gameState.paddleLeftY + paddleHeight) { //pour rebondir a gauche
-        ballColors = applyColorEffect(gameId,"left", "bounce");
+        gameState.ballY <= gameState.paddleLeftY + paddleHeight) {
+        
+        // Calculer où la balle frappe la raquette (0 = haut, 0.5 = milieu, 1 = bas)
+        const hitPosition = (gameState.ballY + ballSize/2 - gameState.paddleLeftY) / paddleHeight;
+        
+        // Ajouter plus de variation à l'angle de rebond
+        // Au centre: rebond normal, aux extrémités: angle plus prononcé
+        const verticalInfluence = (hitPosition - 0.5) * 10; // Crée une valeur entre -5 et 5
+        
+        // Appliquer les effets de couleur spéciaux
+        ballColors = applyColorEffect(gameId, "left", "bounce");
+        
+        // Inverser la direction horizontale (rebond normal)
         gameState.ballSpeedX = -gameState.ballSpeedX;
-        gameState.ballX = margin + paddleWidth + 1; //decale de 1pixel pour eviter paddle block
+        
+        // Modifier la composante verticale selon le point d'impact
+        gameState.ballSpeedY += verticalInfluence;
+        
+        // Ajouter une légère variation aléatoire pour réduire la prévisibilité
+        gameState.ballSpeedY += (Math.random() - 0.5) * 2;
+        
+        // Limiter la vitesse verticale max pour éviter des angles trop extrêmes
+        if (Math.abs(gameState.ballSpeedY) > 15) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 15;
+        }
+        
+        // Éviter les trajectoires horizontales plates
+        if (Math.abs(gameState.ballSpeedY) < 1) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
+        }
+        
+        // Prévenir le blocage de la balle
+        gameState.ballX = margin + paddleWidth + 1;
+        
+        // Jouer le son approprié
         applySoundEffect(ballColors);
     }
-    //bounce a distante de margin + paddle et uniquement sur paddle droite
+    
+    // Rebond sur la raquette droite - même logique
     if (gameState.ballX + ballSize >= gameWidth - margin - paddleWidth &&
         gameState.ballY + ballSize >= gameState.paddleRightY &&
         gameState.ballY <= gameState.paddleRightY + paddleHeight) {
-        ballColors = applyColorEffect(gameId,"right", "bounce");
+        
+        const hitPosition = (gameState.ballY + ballSize/2 - gameState.paddleRightY) / paddleHeight;
+        const verticalInfluence = (hitPosition - 0.5) * 10;
+        
+        ballColors = applyColorEffect(gameId, "right", "bounce");
         gameState.ballSpeedX = -gameState.ballSpeedX;
-        gameState.ballX = gameWidth - margin - paddleWidth - ballSize - 1; //decale de 1 pixel pour eviter bug paddle block
+        gameState.ballSpeedY += verticalInfluence;
+        gameState.ballSpeedY += (Math.random() - 0.5) * 2;
+        
+        if (Math.abs(gameState.ballSpeedY) > 15) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 15;
+        }
+        
+        if (Math.abs(gameState.ballSpeedY) < 1) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
+        }
+        
+        gameState.ballX = gameWidth - margin - paddleWidth - ballSize - 1;
         applySoundEffect(ballColors);
     }
-    if (gameId.ball){
+    
+    // Mettre à jour la position visuelle de la balle
+    if (gameId.ball) {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
+    
+    // Gestion des scores
     if (gameState.ballX < 0) {
         if (!isScoring) {
             isScoring = true;
             if (isBasic) {
                 gameState.scoreRight++;
+            } else {
+                applyColorEffect(gameId, "right", "score");
             }
-            else {
-                applyColorEffect(gameId,"right", "score");
-            }
-            setTimeout(()=> {isScoring = false;}, 500);
+            setTimeout(() => { isScoring = false; }, 500);
         }
         resetBall(gameId);
     }
-    if (gameState.ballX + ballSize > gameWidth){
+    
+    if (gameState.ballX + ballSize > gameWidth) {
         if (!isScoring) {
             isScoring = true;
             if (isBasic) {
@@ -447,7 +569,7 @@ function updateBall(gameId: GameElements): void {
             } else {
                 applyColorEffect(gameId, "left", "score");
             }
-            setTimeout(() => {isScoring = false;}, 500);
+            setTimeout(() => { isScoring = false; }, 500);
         }
         resetBall(gameId);
     }
