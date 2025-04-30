@@ -29,6 +29,8 @@ type GameSounds = {
     doublePoints: Howl;
     femaleCount: Howl;
     quickRiser: Howl;
+    snareGreen: Howl,
+    doubleScore: Howl
 }
 
 
@@ -63,7 +65,7 @@ type BallColorProperties = {
 }
 
 const ballProperties: BallColorProperties = {
-    white: {
+    white: { // ball par defaut sans pouvoir
         speedX: 9,
         speedY: 5,
         onBounce: (_gameState, _leftOrRight, _gameId) => {},
@@ -74,14 +76,16 @@ const ballProperties: BallColorProperties = {
         sound: (gameSounds) =>   { 
             gameSounds?.whiteBall.play()}
     },
-    red: {
+    red: { //balle avec effet smash vitesse horizontal augmente
         speedX: 9,
         speedY: 5,
         onBounce: (gameState, leftOrRight, gameId) => {
             const originalColor = "white";
             const dirX = Math.sign(gameState.ballSpeedX || 1);
-            const boostedSpeed = 16 * dirX;
+            const dirY = Math.sign(gameState.ballSpeedY || 1);
+            const boostedSpeed = 14 * dirX;//fixed speed
             gameState.ballSpeedX = boostedSpeed;
+            gameState.ballSpeedY =  5 * dirY;
             if (leftOrRight === "left") {
                 gameId.paddleLeft.style.backgroundColor = "yellow";
                 setTimeout(() => {
@@ -103,12 +107,14 @@ const ballProperties: BallColorProperties = {
             gameSounds.smashBall.play()
         }
     },
-    green: {
+    green: { //balle avec effet zigzag vitesse vertical augmente
         speedX: 9,
         speedY: 5,
         onBounce: (gameState, _leftOrRight, _gameId) => {
             const dirY = Math.sign(gameState.ballSpeedY);
-            gameState.ballSpeedY = 12 * dirY; 
+            const dirX = Math.sign(gameState.ballSpeedX);
+            gameState.ballSpeedY = 10 * dirY; 
+            gameState.ballSpeedX = 9 * dirX; 
         },
         onScore: (gameState, leftOrRight) => {
             if (leftOrRight === "left") gameState.scoreLeft++;
@@ -118,7 +124,7 @@ const ballProperties: BallColorProperties = {
             gameSounds.quickRiser.play();
         }
     },
-    blue: {
+    blue: { //balle avec double points sur le score et garde les pouvoirs des anciennes balles
         speedX: 9,
         speedY: 5,
         onBounce: (_gameState, _leftOrRight, _gameId) => {
@@ -131,6 +137,7 @@ const ballProperties: BallColorProperties = {
             else if (leftOrRight === "right"){
                 gameState.scoreRight += 2;
             }
+            gameSounds.doubleScore.play();
         },
         sound: (gameSounds) => {
             gameSounds.doublePoints.play();
@@ -188,6 +195,16 @@ function initSounds(): GameSounds {
      src: ["../sounds/quick-riser.mp3"],
      volume: 0.5
     });
+
+    const snareGreen = new Howl({
+        src: ["../sounds/snare-green.mp3"],
+        volume: 0.5
+    });
+
+    const doubleScore = new Howl({
+        src: ["../sounds/choir.mp3"],
+        volume: 0.5
+    });
     return {
         smashBall,
         whiteBall,
@@ -198,7 +215,9 @@ function initSounds(): GameSounds {
         smashSound,
         doublePoints,
         femaleCount,
-        quickRiser
+        quickRiser,
+        snareGreen,
+        doubleScore
     };
 }
 
@@ -224,6 +243,10 @@ function stopAllAudio(): void {
         gameSounds?.paddleSound.stop();
         gameSounds?.smashSound.stop();
         gameSounds?.doublePoints.stop();
+        gameSounds?.femaleCount.stop();
+        gameSounds?.quickRiser.stop();
+        gameSounds?.snareGreen.stop();
+        gameSounds?.doubleScore.stop();
     }
 }
 
@@ -367,7 +390,6 @@ function resetBall(gameId: GameElements):void {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
-    // gameSounds?.femaleCount.play(); //pour avoir son au start de la balle
     setTimeout(() => {
         const baseSpeed = 7 + Math.random() * 4;
         const angle = (Math.random() * Math.PI / 2) - Math.PI / 4;
@@ -380,6 +402,7 @@ function resetBall(gameId: GameElements):void {
         }
     }, 1000);
 }
+
 
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
     if (isBasic === true) return "default" 
@@ -397,6 +420,9 @@ function applySoundEffect(colors:string):void {
     if (colors === "red") {
         gameSounds?.smashSound.play();
     }
+    else if (colors === "green") {
+        gameSounds?.snareGreen.play();
+    }
     else {
         gameSounds?.paddleSound.play();
     }
@@ -406,8 +432,8 @@ function updateBall(gameId: GameElements): void {
     let ballColors: string = gameId.ball.style.backgroundColor;
     
     // fait bouger la balle
-    gameState.ballX += gameState.ballSpeedX;
-    gameState.ballY += gameState.ballSpeedY;
+    gameState.ballX += gameState.ballSpeedX; //default 9
+    gameState.ballY += gameState.ballSpeedY; //default 5
     
     // rebond haut et bas du terrain
     if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize) {
@@ -428,7 +454,6 @@ function updateBall(gameId: GameElements): void {
         const verticalInfluence = (hitPosition - 0.5) * 10;
         // applique les effet de ballProperties
         ballColors = applyColorEffect(gameId, "left", "bounce");
-        
         // inverse la directoin horizontal pour juste faire un rebond
         gameState.ballSpeedX = -gameState.ballSpeedX;
         // applique leffet vertical pour un gameplay moin lineaire
@@ -442,7 +467,6 @@ function updateBall(gameId: GameElements): void {
             gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 10;
             }
         }
-        
         // oblige un minimum de verticalite
         if (Math.abs(gameState.ballSpeedY) < 1) {
             gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
@@ -476,10 +500,14 @@ function updateBall(gameId: GameElements): void {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
+    //--------------------------DEBUG--------------------------------------
     console.log(`la vitesse de la balle en Y: ${gameState.ballSpeedY}`);
     console.log(`la vitesse de la balle en X: ${gameState.ballSpeedX}`);
+    console.log(`couleur de la balle: ${ballColors}`);
+    //--------------------------DEBUG--------------------------------------
     if (gameState.ballX < 0) {
         if (!isScoring) {
+            gameId.ball.style.backgroundColor = "white";
             isScoring = true;
             if (isBasic) {
                 gameState.scoreRight++;
@@ -492,6 +520,7 @@ function updateBall(gameId: GameElements): void {
     }
     if (gameState.ballX + ballSize > gameWidth) {
         if (!isScoring) {
+            gameId.ball.style.backgroundColor = "white";
             isScoring = true;
             if (isBasic) {
                 gameState.scoreLeft++;
