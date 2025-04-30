@@ -381,9 +381,11 @@ function resetBall(gameId: GameElements):void {
     }, 1000);
 }
 
+let color;
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
     if (isBasic === true) return "default" 
     let colors:string = gameId.ball.style.backgroundColor || "white";
+    color = colors;
     if (status === "bounce" && ballProperties[colors].onBounce){
         ballProperties[colors].onBounce(gameState, leftOrRight, gameId);
     }
@@ -401,63 +403,6 @@ function applySoundEffect(colors:string):void {
         gameSounds?.paddleSound.play();
     }
 }
-
-
-//function updateBall(gameId: GameElements): void {
-//    let ballColors:string = gameId.ball.style.backgroundColor;
-//    gameState.ballX += gameState.ballSpeedX;
-//    gameState.ballY += gameState.ballSpeedY;
-//    if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize){
-//        gameState.ballSpeedY = -gameState.ballSpeedY;
-//    }
-//    //je bounce uniquement a hauteur de paddle && en bas du haut du paddle et au dessus du bas du paddle gauche
-//    if (gameState.ballX <= margin + paddleWidth &&
-//        gameState.ballY + ballSize >= gameState.paddleLeftY &&
-//        gameState.ballY <= gameState.paddleLeftY + paddleHeight) { //pour rebondir a gauche
-//        ballColors = applyColorEffect(gameId,"left", "bounce");
-//        gameState.ballSpeedX = -gameState.ballSpeedX;
-//        gameState.ballX = margin + paddleWidth + 1; //decale de 1pixel pour eviter paddle block
-//        applySoundEffect(ballColors);
-//    }
-//    //bounce a distante de margin + paddle et uniquement sur paddle droite
-//    if (gameState.ballX + ballSize >= gameWidth - margin - paddleWidth &&
-//        gameState.ballY + ballSize >= gameState.paddleRightY &&
-//        gameState.ballY <= gameState.paddleRightY + paddleHeight) {
-//        ballColors = applyColorEffect(gameId,"right", "bounce");
-//        gameState.ballSpeedX = -gameState.ballSpeedX;
-//        gameState.ballX = gameWidth - margin - paddleWidth - ballSize - 1; //decale de 1 pixel pour eviter bug paddle block
-//        applySoundEffect(ballColors);
-//    }
-//    if (gameId.ball){
-//        gameId.ball.style.left = `${gameState.ballX}px`;
-//        gameId.ball.style.top = `${gameState.ballY}px`;
-//    }
-//    if (gameState.ballX < 0) {
-//        if (!isScoring) {
-//            isScoring = true;
-//            if (isBasic) {
-//                gameState.scoreRight++;
-//            }
-//            else {
-//                applyColorEffect(gameId,"right", "score");
-//            }
-//            setTimeout(()=> {isScoring = false;}, 500);
-//        }
-//        resetBall(gameId);
-//    }
-//    if (gameState.ballX + ballSize > gameWidth){
-//        if (!isScoring) {
-//            isScoring = true;
-//            if (isBasic) {
-//                gameState.scoreLeft++;
-//            } else {
-//                applyColorEffect(gameId, "left", "score");
-//            }
-//            setTimeout(() => {isScoring = false;}, 500);
-//        }
-//        resetBall(gameId);
-//    }
-//}
 
 function updateBall(gameId: GameElements): void {
     let ballColors: string = gameId.ball.style.backgroundColor;
@@ -494,8 +439,10 @@ function updateBall(gameId: GameElements): void {
         gameState.ballSpeedY += (Math.random() - 0.5) * 2;
         
         // limite sur l'angle vertical
-        if (Math.abs(gameState.ballSpeedY) > 12) {
-            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 12;
+        if (Math.abs(gameState.ballSpeedY) > 10) {
+            if (gameId.ball.style.backgroundColor !== "green") {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 10;
+            }
         }
         
         // oblige un minimum de verticalite
@@ -516,8 +463,10 @@ function updateBall(gameId: GameElements): void {
         gameState.ballSpeedX = -gameState.ballSpeedX;
         gameState.ballSpeedY += verticalInfluence;
         gameState.ballSpeedY += (Math.random() - 0.5) * 2;
-        if (Math.abs(gameState.ballSpeedY) > 12) {
-            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 12;
+        if (Math.abs(gameState.ballSpeedY) > 10) {
+            if (gameId.ball.style.backgroundColor !== "green") {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 10;
+            }
         }
         if (Math.abs(gameState.ballSpeedY) < 1) {
             gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
@@ -531,6 +480,7 @@ function updateBall(gameId: GameElements): void {
     }
     console.log(`la vitesse de la balle en Y: ${gameState.ballSpeedY}`);
     console.log(`la vitesse de la balle en X: ${gameState.ballSpeedX}`);
+    console.log(`la couleur de la balle est: ${color}`);
     if (gameState.ballX < 0) {
         if (!isScoring) {
             isScoring = true;
