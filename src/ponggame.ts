@@ -80,7 +80,7 @@ const ballProperties: BallColorProperties = {
         onBounce: (gameState, leftOrRight, gameId) => {
             const originalColor = "white";
             const dirX = Math.sign(gameState.ballSpeedX || 1);
-            const boostedSpeed = 14 * dirX;
+            const boostedSpeed = 16 * dirX;
             gameState.ballSpeedX = boostedSpeed;
             if (leftOrRight === "left") {
                 gameId.paddleLeft.style.backgroundColor = "yellow";
@@ -381,11 +381,9 @@ function resetBall(gameId: GameElements):void {
     }, 1000);
 }
 
-let color;
 function applyColorEffect(gameId: GameElements, leftOrRight:string, status:string): string {
     if (isBasic === true) return "default" 
     let colors:string = gameId.ball.style.backgroundColor || "white";
-    color = colors;
     if (status === "bounce" && ballProperties[colors].onBounce){
         ballProperties[colors].onBounce(gameState, leftOrRight, gameId);
     }
@@ -480,7 +478,6 @@ function updateBall(gameId: GameElements): void {
     }
     console.log(`la vitesse de la balle en Y: ${gameState.ballSpeedY}`);
     console.log(`la vitesse de la balle en X: ${gameState.ballSpeedX}`);
-    console.log(`la couleur de la balle est: ${color}`);
     if (gameState.ballX < 0) {
         if (!isScoring) {
             isScoring = true;
