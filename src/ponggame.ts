@@ -290,7 +290,6 @@ let gameState: GameState = {
 //analyse un event clavier et check avec in si la bonne touch est press
 function setupKeyPress(): void {
     window.addEventListener("keydown", (event) => {
-        console.log("listen key: ", event.key);
         if (event.key in keys) {
             keys[event.key as keyof Keys] = true; //keyof pas necessaire si init direct keys en const a la place de type
         }
@@ -463,57 +462,49 @@ function applySoundEffect(colors:string):void {
 function updateBall(gameId: GameElements): void {
     let ballColors: string = gameId.ball.style.backgroundColor;
     
-    // Déplacement normal de la balle
+    // fait bouger la balle
     gameState.ballX += gameState.ballSpeedX;
     gameState.ballY += gameState.ballSpeedY;
     
-    // Rebond sur les bords haut et bas
+    // rebond haut et bas du terrain
     if (gameState.ballY <= 0 || gameState.ballY >= gameHeight - ballSize) {
         gameState.ballSpeedY = -gameState.ballSpeedY;
+        if (gameState.ballY <= 0) { //fix pour debloquer balle
+            gameState.ballY = 1;
+        } else {
+            gameState.ballY = gameHeight - ballSize - 1;
+        }
     }
-    
-    // Rebond sur la raquette gauche
     if (gameState.ballX <= margin + paddleWidth &&
         gameState.ballY + ballSize >= gameState.paddleLeftY &&
         gameState.ballY <= gameState.paddleLeftY + paddleHeight) {
         
-        // Calculer où la balle frappe la raquette (0 = haut, 0.5 = milieu, 1 = bas)
+        // recupere position du rebond 
         const hitPosition = (gameState.ballY + ballSize/2 - gameState.paddleLeftY) / paddleHeight;
-        
-        // Ajouter plus de variation à l'angle de rebond
-        // Au centre: rebond normal, aux extrémités: angle plus prononcé
-        const verticalInfluence = (hitPosition - 0.5) * 10; // Crée une valeur entre -5 et 5
-        
-        // Appliquer les effets de couleur spéciaux
+        //utilise la position du rebond pour faire un effet sur langles de -5 a 5
+        const verticalInfluence = (hitPosition - 0.5) * 10;
+        // applique les effet de ballProperties
         ballColors = applyColorEffect(gameId, "left", "bounce");
         
-        // Inverser la direction horizontale (rebond normal)
+        // inverse la directoin horizontal pour juste faire un rebond
         gameState.ballSpeedX = -gameState.ballSpeedX;
-        
-        // Modifier la composante verticale selon le point d'impact
+        // applique leffet vertical pour un gameplay moin lineaire
         gameState.ballSpeedY += verticalInfluence;
-        
-        // Ajouter une légère variation aléatoire pour réduire la prévisibilité
+        // ajoute un effet random sur la verticalite (a voir si je gardes)
         gameState.ballSpeedY += (Math.random() - 0.5) * 2;
         
-        // Limiter la vitesse verticale max pour éviter des angles trop extrêmes
-        if (Math.abs(gameState.ballSpeedY) > 15) {
-            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 15;
+        // limite sur l'angle vertical
+        if (Math.abs(gameState.ballSpeedY) > 12) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 12;
         }
         
-        // Éviter les trajectoires horizontales plates
+        // oblige un minimum de verticalite
         if (Math.abs(gameState.ballSpeedY) < 1) {
             gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
         }
-        
-        // Prévenir le blocage de la balle
         gameState.ballX = margin + paddleWidth + 1;
-        
-        // Jouer le son approprié
         applySoundEffect(ballColors);
     }
-    
-    // Rebond sur la raquette droite - même logique
     if (gameState.ballX + ballSize >= gameWidth - margin - paddleWidth &&
         gameState.ballY + ballSize >= gameState.paddleRightY &&
         gameState.ballY <= gameState.paddleRightY + paddleHeight) {
@@ -525,26 +516,21 @@ function updateBall(gameId: GameElements): void {
         gameState.ballSpeedX = -gameState.ballSpeedX;
         gameState.ballSpeedY += verticalInfluence;
         gameState.ballSpeedY += (Math.random() - 0.5) * 2;
-        
-        if (Math.abs(gameState.ballSpeedY) > 15) {
-            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 15;
+        if (Math.abs(gameState.ballSpeedY) > 12) {
+            gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) * 12;
         }
-        
         if (Math.abs(gameState.ballSpeedY) < 1) {
             gameState.ballSpeedY = Math.sign(gameState.ballSpeedY) || 1;
         }
-        
         gameState.ballX = gameWidth - margin - paddleWidth - ballSize - 1;
         applySoundEffect(ballColors);
     }
-    
-    // Mettre à jour la position visuelle de la balle
     if (gameId.ball) {
         gameId.ball.style.left = `${gameState.ballX}px`;
         gameId.ball.style.top = `${gameState.ballY}px`;
     }
-    
-    // Gestion des scores
+    console.log(`la vitesse de la balle en Y: ${gameState.ballSpeedY}`);
+    console.log(`la vitesse de la balle en X: ${gameState.ballSpeedX}`);
     if (gameState.ballX < 0) {
         if (!isScoring) {
             isScoring = true;
@@ -557,7 +543,6 @@ function updateBall(gameId: GameElements): void {
         }
         resetBall(gameId);
     }
-    
     if (gameState.ballX + ballSize > gameWidth) {
         if (!isScoring) {
             isScoring = true;
@@ -621,12 +606,6 @@ function changeBall(gameId: GameElements): void {
     while (randomColor === temp) {
         randomColor = colors[Math.floor(Math.random() * colors.length)];
     }
-    // CHANGEMENT DE VITESSE SUR COULEUR
-    // const dirX:number = Math.sign(gameState.ballSpeedX);
-    // const dirY:number = Math.sign(gameState.ballSpeedY);
-
-    // gameState.ballSpeedX = ballProperties[randomColor].speedX * dirX;
-    // gameState.ballSpeedY = ballProperties[randomColor].speedY * dirY;
     gameId.ball.style.backgroundColor = randomColor;
     if (!mute && ballProperties[randomColor]?.sound) {
         ballProperties[randomColor].sound(gameSounds);
