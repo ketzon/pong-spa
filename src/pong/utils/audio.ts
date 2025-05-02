@@ -6,6 +6,10 @@ import { GameElements } from '../types';
 export let mute: boolean = false;
 export let gameSounds: GameSounds;
 
+export function setGameSounds(sounds: GameSounds): void {
+    gameSounds = sounds;
+}
+
 export function initSounds(): GameSounds {
     const smashBall = new Howl({
      src: ["../sounds/sonic-boom.mp3"],
@@ -116,6 +120,7 @@ export function applySoundEffect(colors: string): void {
         gameSounds.snareGreen.play();
     }
     else {
+        console.log("REEEEEEEEEEBOOOOOOOOOOONDDDDDDDDDDDDDD")
         gameSounds.paddleSound.play();
     }
 }

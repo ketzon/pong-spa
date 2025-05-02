@@ -8,7 +8,7 @@ import { resetScore } from '../components/score';
 import { resetPaddles } from '../components/paddle';
 import { getElements } from '../components/elements';
 import { setupKeyPress, gameState, pause, isBasic, isResetting, animationFrameId, colorChangeTimer, setColorChangeTimer, setIsBasic, setPause, setAnimationFrameId  } from './gamestate';
-import { resetAllsounds, initSounds, gameSounds, stopAllAudio, mute} from '../utils/audio';
+import { setGameSounds, resetAllsounds, initSounds, gameSounds, stopAllAudio, mute} from '../utils/audio';
 import { listenStatus } from '../events';
 
 //main loop
@@ -37,7 +37,7 @@ export function initPong(): void {
     gameId.winnerMsg.textContent = `Reach ${WIN_SCORE} point(s) to claim victory!🏆`;
     listenStatus(gameId);
     if (!gameSounds) {
-        initSounds();
+        setGameSounds(initSounds());
     }
     setAnimationFrameId(requestAnimationFrame(() => gameLoop(gameId)));
 }
