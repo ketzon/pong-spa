@@ -7,7 +7,7 @@ import { signupView } from "./views/signup.ts";
 import { loginView } from "./views/login.ts";
 import { loginEvents } from "./loginevents.ts";
 import { initializeDashboard } from "./dashboardEvents.ts";
-import { basicMode, initPong, setMode, stopGame, stopPong } from "./ponggame.ts";
+import { setGameMode, initGame, stopGame } from "./ponggame.ts";
 import { twofaView } from "./views/2fa.ts";
 import { init2fa } from "./2faevents.ts";
 import { isUserAuth } from "./auth.ts";
@@ -88,7 +88,7 @@ export async function router(): Promise<void> {
 
             changingArea.innerHTML = dashboardView();
             initializeDashboard();
-            stopPong();//reset pong
+            stopGame();//reset pong
             break ;
 
         case routes.profile:
@@ -100,10 +100,11 @@ export async function router(): Promise<void> {
 
             changingArea.innerHTML = profileView();
             initProfile();
-            stopPong();//reset pong
+            stopGame();//reset pong
             break ;
 
         case routes.play:
+            console.log("route on")
             if (isAuth === false)
             {
                 redirectTo("/");
@@ -111,8 +112,8 @@ export async function router(): Promise<void> {
             }
 
             changingArea.innerHTML = pongView();
-            setMode(true);
-            initPong();
+            setGameMode(true);
+            initGame();
             break ;
 
         case routes.twofa:
